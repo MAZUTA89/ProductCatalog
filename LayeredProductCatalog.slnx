@@ -1,1 +1,5 @@
-<Solution />
+<Solution>
+  <Folder Name="/ProductCatalog.Domain/">
+    <Project Path="ProductCatalog.Domain.Core/ProductCatalog.Domain.Core.csproj" />
+  </Folder>
+</Solution>
