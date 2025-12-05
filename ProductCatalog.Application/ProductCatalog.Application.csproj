@@ -10,4 +10,8 @@
     <PackageReference Include="AutoMapper" Version="16.0.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\ProductCatalog.Domain.Core\ProductCatalog.Domain.Core.csproj" />
+  </ItemGroup>
+
 </Project>
