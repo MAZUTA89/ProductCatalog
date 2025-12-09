@@ -1,0 +1,89 @@
+﻿using Microsoft.EntityFrameworkCore;
+using ProductCatalog.Domain.Core.Entities;
+using ProductCatalog.Domain.Core.Interfaces;
+using ProductCatalog.Infrastructure.Data.AppDbContext;
+using ProductCatalog.Infrastructure.Repositories.NpgRepository.Exceptions;
+
+namespace ProductCatalog.Infrastructure.Repositories.Abstructions
+{
+    public class ProductRepository : IProductRepository
+    {
+        protected IProductDbContext ProductDbContext;
+        public ProductRepository(IProductDbContext dbContext)
+        {
+            ProductDbContext = dbContext;
+        }
+
+        public virtual async Task<Product> AddProductAsync(Product product)
+        {
+            if (await ProductDbContext.Products.AnyAsync(
+                p => p.Title == product.Title))
+            {
+                var args = new NpgRepositoryArgs();
+                args.Title = product.Title;
+
+                throw new NpgProductAlreadyExistException(args);
+            }
+
+            await ProductDbContext.Products.AddAsync(product);
+
+            return product;
+        }
+
+        public virtual async Task<int> ProductsCountAsync()
+        {
+            return await ProductDbContext.Products.CountAsync();
+        }
+
+        public virtual async Task DeleteProductAsync(int id)
+        {
+            var product = await ProductDbContext
+                .Products.FirstOrDefaultAsync(p => p.Id == id);
+
+            if (product == null)
+            {
+                var args = new NpgRepositoryArgs()
+                {
+                    Id = id
+                };
+
+                throw new NpgProductNotFoundException(args);
+            }
+
+            ProductDbContext.Products.Remove(product);
+        }
+
+        public virtual async Task<Product?> GetProductByIdAsync(int id)
+        {
+            var product = await ProductDbContext
+                .Products.FirstOrDefaultAsync(p => p.Id == id);
+
+            if (product == null)
+            {
+                var args = new NpgRepositoryArgs()
+                {
+                    Id = id
+                };
+
+                throw new NpgProductNotFoundException(args);
+            }
+
+            return product;
+        }
+
+        public virtual IQueryable<Product> ProductsQuery()
+        {
+            return ProductDbContext.Products.AsQueryable();
+        }
+
+        public IQueryable<ProductImage> ImagesQuery()
+        {
+            return ProductDbContext.Images.AsQueryable();
+        }
+
+        public virtual async Task<int> ImagesCountAsync(int productId)
+        {
+            return await ProductDbContext.Products.CountAsync();
+        }
+    }
+}

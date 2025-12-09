@@ -1,7 +1,7 @@
 ﻿
 namespace ProductCatalog.Domain.Core.Interfaces
 {
-    public interface IImageStore
+    public interface IImageStorage
     {
         Task PutFileAsync(Stream fileStream, string fileName);
         Task DeleteFileAsync(string fileName);

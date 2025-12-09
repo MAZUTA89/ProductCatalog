@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace ProductCatalog.Application.DTOs
+﻿namespace ProductCatalog.Application.DTOs
 {
     public class ProductsPage<T>
     {

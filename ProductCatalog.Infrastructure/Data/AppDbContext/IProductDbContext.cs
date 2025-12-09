@@ -8,6 +8,6 @@ namespace ProductCatalog.Infrastructure.Data.AppDbContext
     {
         public DbSet<Product> Products { get; set; }
         public DbSet<ProductImage> Images { get; set; }
-        public DatabaseFacade DbContext {  get; }
+        public DatabaseFacade Database {  get; }
     }
 }

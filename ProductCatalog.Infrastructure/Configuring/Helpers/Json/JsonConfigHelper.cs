@@ -7,17 +7,18 @@ namespace ProductCatalog.Infrastructure.Configuring.Helpers.Json
     public class JsonConfigHelper
     {
         const string c_jsonFileName = "appsettings.json";
-        private static IConfigurationRoot s_config;
+        private IConfigurationRoot s_config;
 
         public JsonConfigHelper()
         {
+            string dir = Directory.GetCurrentDirectory();
             s_config = new ConfigurationBuilder()
-                .SetBasePath(Directory.GetCurrentDirectory())
+                .SetBasePath(dir)
                 .AddJsonFile(c_jsonFileName)
                 .Build();
         }
 
-        public static void SectionExist(string sectionName)
+        public void SectionExist(string sectionName)
         {
             if(s_config.GetSection(sectionName).Exists() == false)
             {
@@ -31,11 +32,9 @@ namespace ProductCatalog.Infrastructure.Configuring.Helpers.Json
             }
         }
 
-        public static IConfigurationSection Section(string sectionName)
+        public IConfigurationRoot GetConfig()
         {
-            SectionExist(sectionName);
-
-            return s_config.GetRequiredSection(sectionName);
+            return s_config; 
         }
 
     }

@@ -5,12 +5,14 @@ using ProductCatalog.Domain.Core.Entities;
 
 namespace ProductCatalog.Domain.Core.Interfaces
 {
-    public interface IProductRepository : IDisposable, IAsyncDisposable
+    public interface IProductRepository
     {
         IQueryable<Product> ProductsQuery();
-        Product? GetProductByIdAsync(int id);
+        IQueryable<ProductImage> ImagesQuery();
+        Task<Product?> GetProductByIdAsync(int id);
         Task<Product> AddProductAsync(Product product);
         Task DeleteProductAsync(int id);
-        Task<int> CountAsync();
+        Task<int> ProductsCountAsync();
+        Task<int> ImagesCountAsync(int productId);
     }
 }

@@ -1,4 +1,5 @@
-﻿using ProductCatalog.Infrastructure.Configuring.Helpers.Json;
+﻿using Microsoft.Extensions.Configuration;
+using ProductCatalog.Infrastructure.Configuring.Helpers.Json;
 using ProductCatalog.Infrastructure.Configuring.Interfaces;
 
 namespace ProductCatalog.Infrastructure.Configuring.DbContext
@@ -8,20 +9,28 @@ namespace ProductCatalog.Infrastructure.Configuring.DbContext
         const string c_npgSubSectionName = "NpgConnectionString";
         const string c_rootSectionName = "ConnectionStrings";
 
-        string? _connectionString;
+        string _connectionString;
+        JsonConfigHelper _configHelper;
 
         public NpgConfigProd()
         {
-            JsonConfigHelper.SectionExist(c_rootSectionName);
-            JsonConfigHelper.SectionExist(c_npgSubSectionName);
+            _configHelper = new JsonConfigHelper();
 
-            _connectionString = JsonConfigHelper.Section(c_rootSectionName)
-                .GetSection(c_npgSubSectionName).Value;
+            _connectionString = String.Empty;
         }
 
         public string GetConnectionString()
         {
-            return _connectionString!;   
+            _configHelper.SectionExist(c_rootSectionName);
+            _configHelper.SectionExist(c_npgSubSectionName);
+
+            var config = _configHelper.GetConfig();
+
+            _connectionString = 
+                config.GetRequiredSection(c_rootSectionName)
+                .GetSection(c_npgSubSectionName).Value ?? String.Empty;
+
+            return _connectionString;   
         }
     }
 }
