@@ -77,6 +77,7 @@ namespace ProductCatalog.WebAPI.Extentions
             });
 
             services.AddTransient<IImageConverter, WebpImageConverter>();
+            services.AddTransient<WebpImageConverter>();
 
             services.AddSingleton<IImageStorage, ProductsImagesStorage>();
             services.AddSingleton<ProductsImagesStorage>();

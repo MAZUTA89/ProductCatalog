@@ -1,5 +1,7 @@
-﻿using ProductCatalog.Application.Interfaces;
+﻿using Microsoft.AspNetCore.Http.Features;
+using ProductCatalog.Application.Interfaces;
 using ProductCatalog.Domain.Core.Interfaces;
+using System.Net;
 using System.Net.Mime;
 
 namespace ProductCatalog.WebAPI.Endpoints
@@ -12,11 +14,10 @@ namespace ProductCatalog.WebAPI.Endpoints
             var group = endpoints.MapGroup(rootStaticPath);
 
             group.MapGet("/report", ExportCsvAsync);
-            group.MapGet("/photos", GetPhotosByProductId);
+            group.MapGet("/photos/{productId:int}", GetPhotosByProductId);
 
             return endpoints;
         }
-
 
         public static async Task<IResult> ExportCsvAsync(
             HttpContext ctx,
@@ -43,26 +44,40 @@ namespace ProductCatalog.WebAPI.Endpoints
             }
         }
 
-        public static async Task<IResult> GetPhotosByProductId(
-            int id,
+        public static async Task GetPhotosByProductId(
+            int productId,
             HttpContext ctx,
             IProductService productService)
         {
             try
             {
-                if(id < 0)
+                if(productId < 0)
                 {
                     throw new Exception("id < 0.");
                 }
 
-                await productService
-                    .GetPhotosByProductIdAsync(id, ctx.Response.Body);
+                var allowSynchronousIoOption = ctx.Features.Get<IHttpBodyControlFeature>();
+                if (allowSynchronousIoOption != null)
+                {
+                    allowSynchronousIoOption.AllowSynchronousIO = true;
+                }
 
-                return Results.Empty;
+                ctx.Response.Headers.ContentType = MediaTypeNames.Application.Zip;
+                ctx.Response.Headers.ContentDisposition =
+                    new ContentDisposition()
+                    {
+                        FileName = $"photos_{productId}.zip",
+                        DispositionType = DispositionTypeNames.Attachment
+
+                    }.ToString();
+
+                var productDto = await productService
+                    .GetPhotosByProductIdAsync(productId, ctx.Response.Body);
+                
             }
             catch(Exception ex)
             {
-                return Results.BadRequest(ex.Message);
+                ctx.Response.Body.Close();
             }
         }
     }

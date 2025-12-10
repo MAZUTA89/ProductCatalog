@@ -47,6 +47,16 @@ namespace ProductCatalog.Application.Mappers
                 d => d.FileName,
                 src => src.MapFrom(s => s.FileName));
                 
+            CreateMap<Product, ResultProductDto>()
+                .ForMember(
+                d => d.ProductId,
+                src => src.MapFrom(s => s.Id))
+                .ForMember(
+                d => d.Title,
+                src => src.MapFrom(s => s.Title))
+                .ForMember(
+                s => s.Description,
+                d => d.MapFrom(dto => dto.Description));
         }
     }
 }

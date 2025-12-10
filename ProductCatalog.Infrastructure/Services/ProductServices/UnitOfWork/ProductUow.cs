@@ -27,12 +27,18 @@ namespace ProductCatalog.Infrastructure.Services.ProductServices.UnitOfWork
 
         public virtual async Task CommitTransactionAsync(CancellationToken ct = default)
         {
-            await CurrentTransaction?.CommitAsync();
+            if(CurrentTransaction != null)
+            {
+                await CurrentTransaction?.CommitAsync();
+            }    
         }
 
         public virtual async Task RollbackTransactionAsync(CancellationToken ct = default)
         {
-            await CurrentTransaction?.RollbackAsync(ct);
+            if(CurrentTransaction != null)
+            {
+                await CurrentTransaction?.RollbackAsync(ct);
+            }
         }
 
         public async Task SaveChangesAsync()

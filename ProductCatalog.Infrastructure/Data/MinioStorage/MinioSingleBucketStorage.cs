@@ -1,7 +1,9 @@
 ﻿using Minio;
 using Minio.DataModel.Args;
 using ProductCatalog.Domain.Core.Interfaces;
+using ProductCatalog.Infrastructure.Data.MinioStorage.MinioExceptions;
 using ProductCatalog.Infrastructure.ImageProcessing;
+using System.Net.Http.Headers;
 using System.Net.Mime;
 
 namespace ProductCatalog.Infrastructure.Data.MinioStorage
@@ -54,7 +56,7 @@ namespace ProductCatalog.Infrastructure.Data.MinioStorage
             return ms;
         }
 
-        public virtual async Task PutFileAsync(Stream fileStream, string fileName)
+        public virtual async Task<string> PutFileAsync(Stream fileStream, string fileName)
         {
             await EnsureBucketExistAsync(BucketName);
 
@@ -68,6 +70,8 @@ namespace ProductCatalog.Infrastructure.Data.MinioStorage
                 .WithContentType(contentType);
 
             await MinioClient.PutObjectAsync(putObjArgs);
+
+            return fileName;
         }
 
         public virtual async Task EnsureBucketExistAsync(string bucketName)
@@ -75,16 +79,29 @@ namespace ProductCatalog.Infrastructure.Data.MinioStorage
             BucketExistsArgs bucketExistsArgs = new BucketExistsArgs();
             bucketExistsArgs.WithBucket(bucketName);
 
-            bool isBucketExist =
+            try
+            {
+                bool isBucketExist =
                 await MinioClient.BucketExistsAsync(bucketExistsArgs);
 
-            if (isBucketExist == false)
-            {
-                var bucketArgs = new MakeBucketArgs();
-                bucketArgs.WithBucket(bucketName);
+                if (isBucketExist == false)
+                {
+                    var bucketArgs = new MakeBucketArgs();
+                    bucketArgs.WithBucket(bucketName);
 
-                await MinioClient.MakeBucketAsync(bucketArgs);
+                    await MinioClient.MakeBucketAsync(bucketArgs);
+                }
             }
+            catch (HttpRequestException ex)
+            {
+                throw new StorageUnavailableException("Image storage unavailable.");
+            }
+            catch (Exception ex)
+            {
+                throw new StorageUnavailableException("Unexpected error with image storage.");
+            }
+
+
         }
 
         private string GetContentType(string fileName)

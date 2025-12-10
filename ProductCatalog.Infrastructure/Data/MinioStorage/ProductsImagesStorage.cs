@@ -8,18 +8,24 @@ namespace ProductCatalog.Infrastructure.Data.MinioStorage
         const string c_productsBucketName = "products";
         protected IImageConverter ImageConverter { get; set; }
         public ProductsImagesStorage(IMinioClient minioClient,
-            IImageConverter imageConverter)
+            WebpImageConverter imageConverter)
             : base(minioClient,
                   c_productsBucketName)
         {
             ImageConverter = imageConverter;
         }
 
-        public override async Task PutFileAsync(Stream fileStream, string fileName)
+        public override async Task<string> PutFileAsync(Stream fileStream, string fileName)
         {
             Stream webpFile = await ImageConverter.ConvertFromAsync(fileStream);
 
+            var extenstion = Path.GetExtension(fileName);
+
+            fileName = fileName.Replace(extenstion, ".webp");
+
             await base.PutFileAsync(webpFile, fileName);
+
+            return fileName;
         }
     }
 }

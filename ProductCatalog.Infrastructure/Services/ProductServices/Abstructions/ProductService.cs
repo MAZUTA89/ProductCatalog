@@ -55,9 +55,9 @@ namespace ProductCatalog.Infrastructure.Services.ProductServices.Abstructions
                     var productImage = new ProductImage();
 
                     productImage.ProductId = product.Id;
-                    productImage.FileName = $"{product.Id}_{file.FileName}";
 
-                    await ImageStore.PutFileAsync(file.Content, productImage.FileName);
+                    productImage.FileName =
+                        await ImageStore.PutFileAsync(file.Content, $"{product.Id}_{file.FileName}");
 
                     images.Add(productImage);
                 }
@@ -84,7 +84,8 @@ namespace ProductCatalog.Infrastructure.Services.ProductServices.Abstructions
             }
         }
 
-        public virtual async Task<ProductDto> CreateProductAsync(CreateProductCommand createProductData)
+        public virtual async Task<ProductDto> CreateProductAsync(
+            CreateProductCommand createProductData)
         {
             var product = Mapper.Map<CreateProductCommand, Product>(createProductData);
 
@@ -110,14 +111,14 @@ namespace ProductCatalog.Infrastructure.Services.ProductServices.Abstructions
 
         }
 
-        public virtual async Task<IEnumerable<ProductDto>> GetAllProductsAsync()
+        public virtual async Task<IEnumerable<ResultProductDto>> GetAllProductsAsync()
         {
             var products = await ProductRepository.ProductsQuery()
                 .Include(p => p.Images)
                 .ToListAsync();
 
             var productsDto = Mapper.Map<List<Product>,
-                List<ProductDto>>(products);
+                List<ResultProductDto>>(products);
 
             return productsDto;
         }
@@ -148,7 +149,7 @@ namespace ProductCatalog.Infrastructure.Services.ProductServices.Abstructions
             }
         }
 
-        public virtual async Task<ProductDto?> GetProductAsync(int id)
+        public virtual async Task<ResultProductDto?> GetProductAsync(int id)
         {
             if (id < 0)
                 return default;
@@ -158,13 +159,14 @@ namespace ProductCatalog.Infrastructure.Services.ProductServices.Abstructions
             if (product == null)
                 return default;
 
-            return Mapper.Map<Product, ProductDto>(product);
+            return Mapper.Map<Product, ResultProductDto>(product);
 
         }
 
-        public async Task<ProductsPage<ProductDto>> GetProductsPageAsync(int page, int pageSize)
+        public async Task<ProductsPage<ResultProductDto>> GetProductsPageAsync(
+            int page, int pageSize)
         {
-            var productsPage = new ProductsPage<ProductDto>();
+            var productsPage = new ProductsPage<ResultProductDto>();
 
             productsPage.PageSize = pageSize;
             productsPage.Page = page;
@@ -178,7 +180,7 @@ namespace ProductCatalog.Infrastructure.Services.ProductServices.Abstructions
                 .ToListAsync();
 
             productsPage.Items = Mapper.Map<List<Product>,
-                List<ProductDto>>(products);
+                List<ResultProductDto>>(products);
 
             return productsPage;
         }
@@ -216,7 +218,7 @@ namespace ProductCatalog.Infrastructure.Services.ProductServices.Abstructions
             }
         }
 
-        public async Task GetPhotosByProductIdAsync(int id, Stream targetStream)
+        public async Task<ProductDto> GetPhotosByProductIdAsync(int id, Stream targetStream)
         {
             var product = await ProductRepository
                 .GetProductByIdAsync(id);
@@ -234,17 +236,19 @@ namespace ProductCatalog.Infrastructure.Services.ProductServices.Abstructions
 
                 var entry = archive.CreateEntry(imgName, CompressionLevel.Fastest);
 
-                using Stream entryStream = entry.Open();
-
-                input.CopyTo(entryStream);
-
-                await entryStream.FlushAsync();
+                await using (Stream entryStream = await entry.OpenAsync())
+                {
+                    await input.CopyToAsync(entryStream);
+                }
             }
+
+            return Mapper.Map<Product, ProductDto>(product);
         }
 
         public async Task UpdateProductAsync(UpdateProductCommand productDto)
         {
-            Product product = await ProductRepository.GetProductByIdAsync(productDto.Id);
+            Product product = await ProductRepository
+                .GetProductByIdAsync(productDto.Id);
 
             if (product == null)
                 throw new Exception("Unexpected error.");
