@@ -21,14 +21,6 @@ namespace ProductCatalog.Infrastructure.Data.MinioStorage
             MinioClient = minioClient;
         }
 
-        public MinioSingleBucketStorage(IMinioClient minioClient,
-            string bucketName, 
-            IImageConverter imageConverter) 
-            : this(minioClient, bucketName)
-        {
-            ImageConverter = imageConverter;
-        }
-
         public virtual async Task DeleteFileAsync(string fileName)
         {
             await EnsureBucketExistAsync(BucketName);
@@ -65,12 +57,6 @@ namespace ProductCatalog.Infrastructure.Data.MinioStorage
         public virtual async Task PutFileAsync(Stream fileStream, string fileName)
         {
             await EnsureBucketExistAsync(BucketName);
-
-            if(ImageConverter != null)
-            {
-                fileStream =
-                    await ImageConverter.ConvertFromAsync(fileStream);
-            }
 
             string contentType = GetContentType(fileName);
 

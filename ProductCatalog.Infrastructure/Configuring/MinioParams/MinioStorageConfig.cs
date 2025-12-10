@@ -20,11 +20,11 @@ namespace ProductCatalog.Infrastructure.Configuring.MinioParams
             out string accessKey,
             out string secretKey, out bool secure)
         {
-            _jsonConfigHelper.SectionExist(c_rootSectionName);
-            _jsonConfigHelper.SectionExist(c_endpointName);
-            _jsonConfigHelper.SectionExist(c_accessKeyName);
-            _jsonConfigHelper.SectionExist(c_secretKeyName);
-            _jsonConfigHelper.SectionExist(c_secureName);
+            _jsonConfigHelper.SectionsExist(c_rootSectionName,
+                c_endpointName,
+                c_accessKeyName,
+                c_secretKeyName,
+                c_secureName);
 
             var config = _jsonConfigHelper.GetConfig();
 

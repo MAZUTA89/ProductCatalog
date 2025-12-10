@@ -14,9 +14,10 @@ builder.Services.AddProductServices();
 
 WebApplication app = builder.Build();
 
-//app.MapGet("api/products", (int id) => Results.Json(id));
+string staticPrefix = "/api/products/";
 
-app.SetUpCRUDEndpoints();
-
+app.UseCRUDEndpoints(staticPrefix);
+app.UseFileEndpoints(staticPrefix);
+app.UsePageEndpoints(staticPrefix);
 
 app.Run();

@@ -11,6 +11,8 @@ namespace ProductCatalog.Domain.Core.Interfaces
         IQueryable<ProductImage> ImagesQuery();
         Task<Product?> GetProductByIdAsync(int id);
         Task<Product> AddProductAsync(Product product);
+        Task<IEnumerable<ProductImage>> AddImagesAsync(IEnumerable<ProductImage> images);
+        Task<ProductImage> AddImageAsync(ProductImage image);
         Task DeleteProductAsync(int id);
         Task<int> ProductsCountAsync();
         Task<int> ImagesCountAsync(int productId);

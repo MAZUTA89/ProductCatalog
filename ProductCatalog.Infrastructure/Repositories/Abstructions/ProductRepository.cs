@@ -3,6 +3,7 @@ using ProductCatalog.Domain.Core.Entities;
 using ProductCatalog.Domain.Core.Interfaces;
 using ProductCatalog.Infrastructure.Data.AppDbContext;
 using ProductCatalog.Infrastructure.Repositories.NpgRepository.Exceptions;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace ProductCatalog.Infrastructure.Repositories.Abstructions
 {
@@ -56,7 +57,9 @@ namespace ProductCatalog.Infrastructure.Repositories.Abstructions
         public virtual async Task<Product?> GetProductByIdAsync(int id)
         {
             var product = await ProductDbContext
-                .Products.FirstOrDefaultAsync(p => p.Id == id);
+                .Products
+                .Include(p => p.Images)
+                .FirstOrDefaultAsync(p => p.Id == id);
 
             if (product == null)
             {
@@ -84,6 +87,30 @@ namespace ProductCatalog.Infrastructure.Repositories.Abstructions
         public virtual async Task<int> ImagesCountAsync(int productId)
         {
             return await ProductDbContext.Products.CountAsync();
+        }
+
+        public async Task<IEnumerable<ProductImage>> AddImagesAsync(
+            IEnumerable<ProductImage> images)
+        {
+            await ProductDbContext.Images.AddRangeAsync(images);
+
+            return images;
+        }
+
+        public async Task<ProductImage> AddImageAsync(ProductImage image)
+        {
+            if(await ProductDbContext.Images.AnyAsync(
+                i => i.FileName == image.FileName))
+            {
+                var args = new NpgRepositoryArgs();
+                args.Title = image.FileName;
+
+                throw new NpgProductAlreadyExistException(args);
+            }
+            
+            await ProductDbContext.Images.AddAsync(image);
+
+            return image;
         }
     }
 }

@@ -39,6 +39,14 @@ namespace ProductCatalog.Application.Mappers
                 .ForMember(
                 d => d.ImagesAmount,
                 s => s.MapFrom(src => src.Images.Count));
+
+            CreateMap<CreateProductCommand, Product>();
+
+            CreateMap<FileContent, ProductImage>()
+                .ForMember(
+                d => d.FileName,
+                src => src.MapFrom(s => s.FileName));
+                
         }
     }
 }

@@ -76,7 +76,7 @@ namespace ProductCatalog.WebAPI.Extentions
                 return minioClient;
             });
 
-            services.AddTransient<WebpImageConverter>();
+            services.AddTransient<IImageConverter, WebpImageConverter>();
 
             services.AddSingleton<IImageStorage, ProductsImagesStorage>();
             services.AddSingleton<ProductsImagesStorage>();

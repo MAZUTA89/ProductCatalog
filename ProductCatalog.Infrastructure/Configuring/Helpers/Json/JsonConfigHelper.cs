@@ -18,16 +18,30 @@ namespace ProductCatalog.Infrastructure.Configuring.Helpers.Json
                 .Build();
         }
 
-        public void SectionExist(string sectionName)
+        public void SectionsExist(string rootSection, params string[] subSections)
         {
-            if(s_config.GetSection(sectionName).Exists() == false)
-            {
-                JsonConfigArgs args = new()
-                {
-                    FileName = c_jsonFileName,
-                    SectionName = sectionName
-                };
+            var root = s_config.GetRequiredSection(rootSection);
 
+            string rootName = String.Empty;
+
+            var args = new JsonConfigArgs();
+
+            args.FileName = c_jsonFileName;
+
+            if (root.Exists() == true)
+            {
+                foreach (var section in subSections)
+                {
+                    if(root.GetSection(section).Exists() == false)
+                    {
+                        args.SectionName = $"subsection name: {section}";
+                        throw new SectionNotFoundException(args);
+                    }
+                }
+            }
+            else
+            {
+                args.SectionName = $"root section name: {rootSection}";
                 throw new SectionNotFoundException(args);
             }
         }

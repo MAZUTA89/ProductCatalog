@@ -34,53 +34,13 @@ namespace ProductCatalog.Infrastructure.Services.ProductServices.Abstructions
             Mapper = mapper;
         }
 
-        public virtual async Task<ProductDto> CreateFromMultipartAsync(ProductDto productDto,
+        public virtual async Task<ProductDto> CreateFromMultipartAsync(
+            CreateProductCommand createProductData,
             IEnumerable<FileContent> content)
         {
-            var product = Mapper.Map<ProductDto, Product>(productDto);
+            var product = Mapper.Map<CreateProductCommand, Product>(createProductData);
 
-            List<ProductImage> images = 
-                new List<ProductImage>(content.Count());
-
-            //foreach (var file in content)
-            //{
-            //    var img = new ProductImage()
-            //    {
-            //        FileName = file.FileName
-            //    }
-            //    images.Add()
-            //}
-
-            product = await ProductRepository.AddProductAsync(product);
-
-            
-
-            //foreach (FileContent file in content)
-            //{
-            //    var productImg = new ProductImage()
-            //    {
-            //        ProductId = product.Id,
-            //        FileName = $"{product.Id}_{product.Title}"
-            //    };
-
-            //    file.Content.Position = 0;
-
-            //    await ImageStore.PutFileAsync(file.Content, file.FileName);
-
-
-            //    images.Add(productImg);
-            //}
-
-            product.Images = images;
-
-            productDto = Mapper.Map<Product, ProductDto>(product);
-
-            return productDto;
-        }
-
-        public virtual async Task<ProductDto> CreateProductAsync(ProductDto productDto)
-        {
-            var product = Mapper.Map<ProductDto, Product>(productDto);
+            var images = new List<ProductImage>();
 
             try
             {
@@ -88,7 +48,53 @@ namespace ProductCatalog.Infrastructure.Services.ProductServices.Abstructions
 
                 product = await ProductRepository.AddProductAsync(product);
 
-                productDto = Mapper.Map<Product, ProductDto>(product);
+                await Uow.SaveChangesAsync();
+
+                foreach (var file in content)
+                {
+                    var productImage = new ProductImage();
+
+                    productImage.ProductId = product.Id;
+                    productImage.FileName = $"{product.Id}_{file.FileName}";
+
+                    await ImageStore.PutFileAsync(file.Content, productImage.FileName);
+
+                    images.Add(productImage);
+                }
+
+                await ProductRepository.AddImagesAsync(images);
+
+                await Uow.SaveChangesAsync();
+
+                await Uow.CommitTransactionAsync();
+
+                var productDto = Mapper.Map<Product, ProductDto>(product);
+
+                return productDto;
+            }
+            catch (Exception ex)
+            {
+                await Uow.RollbackTransactionAsync();
+
+                foreach (var img in images)
+                {
+                    await ImageStore.DeleteFileAsync(img.FileName);
+                }
+                throw;
+            }
+        }
+
+        public virtual async Task<ProductDto> CreateProductAsync(CreateProductCommand createProductData)
+        {
+            var product = Mapper.Map<CreateProductCommand, Product>(createProductData);
+
+            try
+            {
+                await Uow.BeginTransactionAsync();
+
+                product = await ProductRepository.AddProductAsync(product);
+
+                var productDto = Mapper.Map<Product, ProductDto>(product);
 
                 await Uow.SaveChangesAsync();
 
@@ -101,15 +107,17 @@ namespace ProductCatalog.Infrastructure.Services.ProductServices.Abstructions
                 await Uow.RollbackTransactionAsync();
                 throw;
             }
-            
+
         }
 
         public virtual async Task<IEnumerable<ProductDto>> GetAllProductsAsync()
         {
             var products = await ProductRepository.ProductsQuery()
+                .Include(p => p.Images)
                 .ToListAsync();
 
-            var productsDto = Mapper.Map<List<Product>, List<ProductDto>>(products);
+            var productsDto = Mapper.Map<List<Product>,
+                List<ProductDto>>(products);
 
             return productsDto;
         }
@@ -121,14 +129,15 @@ namespace ProductCatalog.Infrastructure.Services.ProductServices.Abstructions
                 Encoding.UTF8);
 
             await using var csvWriter = new CsvWriter(writer,
-                CultureInfo.InvariantCulture, leaveOpen : true);
+                CultureInfo.InvariantCulture, leaveOpen: true);
 
             csvWriter.WriteHeader<ProductCsvDto>();
+            await csvWriter.NextRecordAsync();
 
             var products = ProductRepository.ProductsQuery()
                 .AsAsyncEnumerable();
 
-            await foreach(var product in products)
+            await foreach (var product in products)
             {
                 var productCsvDto = Mapper.Map<Product, ProductCsvDto>(product);
 
@@ -139,7 +148,7 @@ namespace ProductCatalog.Infrastructure.Services.ProductServices.Abstructions
             }
         }
 
-        public virtual async Task<ProductDto>? GetProductAsync(int id)
+        public virtual async Task<ProductDto?> GetProductAsync(int id)
         {
             if (id < 0)
                 return default;
@@ -174,9 +183,37 @@ namespace ProductCatalog.Infrastructure.Services.ProductServices.Abstructions
             return productsPage;
         }
 
-        public async Task RemoveProductAsync(int id)
+        public async Task<ProductDto> RemoveProductAsync(int id)
         {
-            await ProductRepository.DeleteProductAsync(id);
+            try
+            {
+                var product = await GetProductAsync(id);
+
+                if (product == null)
+                {
+                    throw new Exception("Unexpected error.");
+                }
+
+                foreach (var img in product.Images)
+                {
+                    await ImageStore.DeleteFileAsync(img.FileName);
+                }
+
+                await Uow.BeginTransactionAsync();
+
+                await ProductRepository.DeleteProductAsync(id);
+
+                await Uow.SaveChangesAsync();
+
+                await Uow.CommitTransactionAsync();
+
+                return product;
+            }
+            catch (Exception ex)
+            {
+                await Uow.RollbackTransactionAsync();
+                throw;
+            }
         }
 
         public async Task GetPhotosByProductIdAsync(int id, Stream targetStream)
@@ -202,6 +239,32 @@ namespace ProductCatalog.Infrastructure.Services.ProductServices.Abstructions
                 input.CopyTo(entryStream);
 
                 await entryStream.FlushAsync();
+            }
+        }
+
+        public async Task UpdateProductAsync(UpdateProductCommand productDto)
+        {
+            Product product = await ProductRepository.GetProductByIdAsync(productDto.Id);
+
+            if (product == null)
+                throw new Exception("Unexpected error.");
+
+            try
+            {
+                await Uow.BeginTransactionAsync();
+
+                product.Title = productDto.Title;
+                product.Description = productDto.Description;
+
+                await Uow.SaveChangesAsync();
+
+                await Uow.CommitTransactionAsync();
+            }
+            catch (Exception ex)
+            {
+                await Uow.RollbackTransactionAsync();
+
+                throw;
             }
         }
     }

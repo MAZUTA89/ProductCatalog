@@ -21,8 +21,8 @@ namespace ProductCatalog.Infrastructure.Configuring.DbContext
 
         public string GetConnectionString()
         {
-            _configHelper.SectionExist(c_rootSectionName);
-            _configHelper.SectionExist(c_npgSubSectionName);
+            _configHelper.SectionsExist(c_rootSectionName,
+                c_npgSubSectionName);
 
             var config = _configHelper.GetConfig();
 
