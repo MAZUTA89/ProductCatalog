@@ -5,17 +5,21 @@ using ProductCatalog.Application.DTO;
 using ProductCatalog.Application.DTOs;
 using ProductCatalog.Domain.Core.Entities;
 using ProductCatalog.Domain.Core.Interfaces;
+using ProductCatalog.Infrastructure.Repositories.Abstructions;
 using ProductCatalog.Infrastructure.Services.ProductServices.UnitOfWork;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace ProductCatalog.Infrastructure.Commands
 {
-    public class CreateProductHandler : IRequestHandler<CreateProductWithImagesCommand, ProductDtoWithId>
+    public class UpdateProductHandler :
+        IRequestHandler<UpdateProductWithImagesCommand, ProductDtoWithId>
     {
+
         protected IProductRepository ProductRepository;
         protected IProductsUnitOfWork Uow;
         protected IMapper Mapper;
         protected IImageStorage ImageStorage;
-        public CreateProductHandler(IProductRepository productRepository,
+        public UpdateProductHandler(IProductRepository productRepository,
             IProductsUnitOfWork unitOfWork,
             IMapper mapper,
             IImageStorage imageStorage)
@@ -26,15 +30,14 @@ namespace ProductCatalog.Infrastructure.Commands
             ImageStorage = imageStorage;
         }
 
-        public virtual async Task<ProductDtoWithId> Handle(
-            CreateProductWithImagesCommand request,
-            CancellationToken ct)
+        public async Task<ProductDtoWithId> Handle(UpdateProductWithImagesCommand request,
+            CancellationToken cancellationToken)
         {
+            Product product = await ProductRepository
+                .GetProductByIdAsync(request.Id);
 
-            var content = request.Files;
-
-            var product = Mapper.Map<CreateProductWithImagesCommand,
-                Product>(request);
+            if (product == null)
+                throw new Exception("Unexpected error.");
 
             var images = new List<ProductImage>();
 
@@ -42,19 +45,24 @@ namespace ProductCatalog.Infrastructure.Commands
             {
                 await Uow.BeginTransactionAsync();
 
-                product = await ProductRepository.AddProductAsync(product);
+                product.Title = request.Title;
+                product.Description = request.Description;
 
                 await Uow.SaveChangesAsync();
 
-                foreach (var file in content)
+                foreach (var img in product.Images)
+                {
+                    await ImageStorage.DeleteFileAsync(img.FileName);
+                }
+
+                foreach (var file in request.Files)
                 {
                     var productImage = new ProductImage();
 
                     productImage.ProductId = product.Id;
 
                     productImage.FileName =
-                        await ImageStorage.PutFileAsync(file.Content,
-                        $"{product.Id}_{file.FileName}");
+                        await ImageStorage.PutFileAsync(file.Content, $"{product.Id}_{file.FileName}");
 
                     images.Add(productImage);
                 }
@@ -63,20 +71,19 @@ namespace ProductCatalog.Infrastructure.Commands
 
                 await Uow.SaveChangesAsync();
 
-                await Uow.CommitTransactionAsync();
+                product.Images = images;
 
                 var productDto = Mapper.Map<Product, ProductDtoWithId>(product);
 
+                await Uow.CommitTransactionAsync();
+
                 return productDto;
+
             }
             catch (Exception ex)
             {
                 await Uow.RollbackTransactionAsync();
 
-                foreach (var img in images)
-                {
-                    await ImageStorage.DeleteFileAsync(img.FileName);
-                }
                 throw;
             }
         }
