@@ -1,5 +1,3 @@
-using ProductCatalog.Application.Interfaces;
-using ProductCatalog.Domain.Core.Interfaces;
 using ProductCatalog.WebAPI.Endpoints;
 using ProductCatalog.WebAPI.Extentions;
 
