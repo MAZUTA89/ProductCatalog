@@ -1,10 +1,6 @@
 ﻿using AutoMapper;
 using CsvHelper;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Conventions;
-using Microsoft.EntityFrameworkCore.Storage.Json;
-using Minio.DataModel.Tags;
-using Newtonsoft.Json;
 using ProductCatalog.Application.DTO;
 using ProductCatalog.Application.DTOs;
 using ProductCatalog.Application.Interfaces;

@@ -1,13 +1,10 @@
 ﻿using AutoMapper;
 using MediatR;
 using ProductCatalog.Application.Commands;
-using ProductCatalog.Application.DTO;
 using ProductCatalog.Application.DTOs;
 using ProductCatalog.Domain.Core.Entities;
 using ProductCatalog.Domain.Core.Interfaces;
-using ProductCatalog.Infrastructure.Repositories.Abstructions;
 using ProductCatalog.Infrastructure.Services.ProductServices.UnitOfWork;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace ProductCatalog.Infrastructure.Commands
 {
