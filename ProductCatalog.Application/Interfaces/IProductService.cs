@@ -9,10 +9,10 @@ namespace ProductCatalog.Application.Interfaces
         Task<ProductDto> CreateFromMultipartAsync(CreateProductCommand createProductData,
             IEnumerable<FileContent> content);
         Task<ProductDto> CreateProductAsync(CreateProductCommand createProductData);
-        Task<ResultProductDto?> GetProductAsync(int id);
-        Task<ProductsPage<ResultProductDto>> GetProductsPageAsync(int page,
+        Task<ProductDtoWithId?> GetProductAsync(int id);
+        Task<ProductsPage<ProductDtoWithId>> GetProductsPageAsync(int page,
             int pageSize);
-        Task<IEnumerable<ResultProductDto>> GetAllProductsAsync();
+        Task<IEnumerable<ProductDtoWithId>> GetAllProductsAsync();
         Task<ProductDto> GetPhotosByProductIdAsync(int id, Stream targetStream);
         Task<ProductDto> RemoveProductAsync(int id);
         Task UpdateProductAsync(UpdateProductCommand productDto);

@@ -88,7 +88,9 @@ namespace ProductCatalog.WebAPI.Extentions
         public static IServiceCollection AddMapper
             (this IServiceCollection services)
         {
-            services.AddAutoMapper(cfg => { }, typeof(ProductProfile));
+            services.AddAutoMapper(cfg => { },
+                typeof(ProductProfile),
+                typeof(CommandsAndQueriesPfofile));
 
             return services;
         }

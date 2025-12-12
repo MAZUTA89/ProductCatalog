@@ -1,10 +1,6 @@
 ﻿using AutoMapper;
 using CsvHelper;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Conventions;
-using Microsoft.EntityFrameworkCore.Storage.Json;
-using Minio.DataModel.Tags;
-using Newtonsoft.Json;
 using ProductCatalog.Application.DTO;
 using ProductCatalog.Application.DTOs;
 using ProductCatalog.Application.Interfaces;
@@ -111,14 +107,14 @@ namespace ProductCatalog.Infrastructure.Services.ProductServices.Abstructions
 
         }
 
-        public virtual async Task<IEnumerable<ResultProductDto>> GetAllProductsAsync()
+        public virtual async Task<IEnumerable<ProductDtoWithId>> GetAllProductsAsync()
         {
             var products = await ProductRepository.ProductsQuery()
                 .Include(p => p.Images)
                 .ToListAsync();
 
             var productsDto = Mapper.Map<List<Product>,
-                List<ResultProductDto>>(products);
+                List<ProductDtoWithId>>(products);
 
             return productsDto;
         }
@@ -149,7 +145,7 @@ namespace ProductCatalog.Infrastructure.Services.ProductServices.Abstructions
             }
         }
 
-        public virtual async Task<ResultProductDto?> GetProductAsync(int id)
+        public virtual async Task<ProductDtoWithId?> GetProductAsync(int id)
         {
             if (id < 0)
                 return default;
@@ -159,14 +155,14 @@ namespace ProductCatalog.Infrastructure.Services.ProductServices.Abstructions
             if (product == null)
                 return default;
 
-            return Mapper.Map<Product, ResultProductDto>(product);
+            return Mapper.Map<Product, ProductDtoWithId>(product);
 
         }
 
-        public async Task<ProductsPage<ResultProductDto>> GetProductsPageAsync(
+        public async Task<ProductsPage<ProductDtoWithId>> GetProductsPageAsync(
             int page, int pageSize)
         {
-            var productsPage = new ProductsPage<ResultProductDto>();
+            var productsPage = new ProductsPage<ProductDtoWithId>();
 
             productsPage.PageSize = pageSize;
             productsPage.Page = page;
@@ -180,7 +176,7 @@ namespace ProductCatalog.Infrastructure.Services.ProductServices.Abstructions
                 .ToListAsync();
 
             productsPage.Items = Mapper.Map<List<Product>,
-                List<ResultProductDto>>(products);
+                List<ProductDtoWithId>>(products);
 
             return productsPage;
         }
