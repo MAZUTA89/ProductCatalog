@@ -1,4 +1,6 @@
-﻿using ProductCatalog.Application.Interfaces;
+﻿using MediatR;
+using ProductCatalog.Application.Interfaces;
+using ProductCatalog.Application.Queries;
 using System.Reflection.Metadata;
 
 namespace ProductCatalog.WebAPI.Endpoints
@@ -20,15 +22,18 @@ namespace ProductCatalog.WebAPI.Endpoints
             int page,
             int pageSize,
             HttpContext ctx,
-            IProductService productService)
+            IMediator mediator)
         {
             try
             {
-                var pageDto = await productService.GetProductsPageAsync(page, pageSize);
+                var query = new GetProductsPageQuery()
+                { Page = page, PageSize = pageSize };
+
+                var pageDto = await mediator.Send(query);
 
                 await Results.Json(pageDto).ExecuteAsync(ctx);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 await Results.BadRequest(ex.Message).ExecuteAsync(ctx);
             }

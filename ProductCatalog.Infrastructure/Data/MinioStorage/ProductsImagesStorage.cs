@@ -15,7 +15,8 @@ namespace ProductCatalog.Infrastructure.Data.MinioStorage
             ImageConverter = imageConverter;
         }
 
-        public override async Task<string> PutFileAsync(Stream fileStream, string fileName)
+        public override async Task<string> PutFileAsync(Stream fileStream,
+            string fileName)
         {
             Stream webpFile = await ImageConverter.ConvertFromAsync(fileStream);
 

@@ -1,126 +1,147 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using ProductCatalog.Application.DTO;
 using ProductCatalog.Application.DTOs;
 using ProductCatalog.Application.Interfaces;
+using ProductCatalog.Application.Queries;
+using MediatR;
+using ProductCatalog.Application.Commands;
 
-namespace ProductCatalog.WebAPI.Endpoints
+namespace ProductCatalog.WebAPI.Endpoints;
+
+public static class CrudEnpoints
 {
-    public static class CrudEnpoints
+    public static IEndpointRouteBuilder UseCRUDEndpoints
+        (this IEndpointRouteBuilder endpoints, string rootStaticPath)
     {
-        public static IEndpointRouteBuilder UseCRUDEndpoints
-            (this IEndpointRouteBuilder endpoints, string rootStaticPath)
+        var group = endpoints.MapGroup(rootStaticPath);
+
+        group.MapGet("/{id:int}", GetProductById);
+
+        group.MapGet("/all", GetAllProductsAsync);
+
+        group.MapPost("", CreateProductMultipart)
+            .DisableAntiforgery();
+
+        group.MapPut("", UpdateProductAsync);
+
+        group.MapDelete("/{id:int}", RemoveProduct);
+        return endpoints;
+    }
+
+    public static async Task<IResult> GetProductById(
+        int id,
+        IMediator mediator)
+    {
+        try
         {
-            var group = endpoints.MapGroup(rootStaticPath);
+            var query = new GetProductByIdQuery() { Id = id };
 
-            group.MapGet("/{id:int}", GetProductById);
+            var product = await mediator.Send(query);
 
-            group.MapGet("/all", GetAllProductsAsync);
-
-            group.MapPost("", CreateProductMultipart)
-                .DisableAntiforgery();
-
-            group.MapPut("", UpdateProductAsync);
-
-            group.MapDelete("/{id:int}", RemoveProduct);
-            return endpoints;
-        }
-
-        public static async Task<IResult> GetProductById(
-            int id,
-            IProductService productService)
-        {
-            try
+            if (product == null)
             {
-                var product = await productService.GetProductAsync(id);
-
-                if (product == null)
-                {
-                    return Results.Json(new { message = "Unexpected error." }, statusCode: 500);
-                }
-                else
-                {
-                    return Results.Json(product);
-                }
+                return Results.Json(new { message = "Unexpected error." }, statusCode: 500);
             }
-            catch (Exception ex)
+            else
             {
-                return Results.BadRequest(ex.Message);
+                return Results.Json(product);
             }
         }
-
-        public static async Task GetAllProductsAsync(
-            HttpContext ctx,
-            IProductService productService)
+        catch (Exception ex)
         {
-            try
-            {
-                var product = await productService.GetAllProductsAsync();
-
-                await Results.Json(product).ExecuteAsync(ctx);
-            }
-            catch(Exception ex)
-            {
-                await Results.BadRequest(ex.Message).ExecuteAsync(ctx);
-            }
+            return Results.BadRequest(ex.Message);
         }
+    }
 
-        public static async Task<IResult> CreateProductMultipart(
-            [FromForm] CreateProductCommand productDto, 
-            [FromForm] IFormFileCollection files,
-            IProductService productService)
+    public static async Task GetAllProductsAsync(
+        HttpContext ctx,
+        IMediator mediator
+        )
+    {
+        try
         {
-            try
-            {
-                IEnumerable<FileContent> content = files.Select(f => new FileContent()
-                {
-                    FileName = f.FileName,
-                    Content = f.OpenReadStream()
-                });
+            var query = new GetProductsQuery();
 
-                var createdProductDto = await productService
-                    .CreateFromMultipartAsync(productDto, content);
+            var product = await mediator.Send(query);
 
-                return Results.Ok(createdProductDto);
-            }
-            catch (Exception ex)
-            {
-                return Results.BadRequest(ex.Message);
-            }
+            await Results.Json(product).ExecuteAsync(ctx);
         }
-
-        public static async Task<IResult> RemoveProduct(
-            int id,
-            IProductService productService)
+        catch(Exception ex)
         {
-            try
-            {
-                if (id < 0)
-                    return Results.Json(new { message = "id < 0" });
-
-                var productsDto = await productService.RemoveProductAsync(id);
-
-                return Results.Ok($"Product removed with Title: {productsDto.Title}.");
-            }
-            catch (Exception ex)
-            {
-                return Results.BadRequest(ex.Message);
-            }
+            await Results.BadRequest(ex.Message).ExecuteAsync(ctx);
         }
+    }
 
-        public static async Task<IResult> UpdateProductAsync(
-            [FromForm] UpdateProductCommand updateProductCommand,
-            IProductService productService)
+    public static async Task<IResult> CreateProductMultipart(
+        [FromForm] string title,
+        [FromForm] string description,
+        [FromForm] IFormFileCollection files,
+        HttpContext ctx,
+        IMediator mediator)
+    {
+        try
         {
-            try
+            var command = new CreateProductWithImagesCommand()
             {
-                await productService.UpdateProductAsync(updateProductCommand);
+                Title = title,
+                Description = description,
+            };
 
-                return Results.Ok();
-            }
-            catch(Exception ex)
+            IEnumerable<FileContent> content = files.Select(
+                f => new FileContent()
             {
-                return Results.BadRequest(ex.Message);
-            }
+                FileName = f.FileName,
+                Content = f.OpenReadStream()
+            });
+
+            command.Files = content;
+
+
+            var createdProductDto = await mediator.Send(command);
+
+            return Results.Json(createdProductDto);
+        }
+        catch (Exception ex)
+        {
+            return Results.BadRequest(ex.Message);
+        }
+    }
+
+    public static async Task<IResult> RemoveProduct(
+        int id,
+        IMediator mediator)
+    {
+        try
+        {
+            var command = new DeleteProductCommand()
+            { Id = id };
+            
+
+            if (command.Id < 0)
+                return Results.Json(new { message = "id < 0" });
+
+            var result = await mediator.Send(command);
+
+            return Results.Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return Results.BadRequest(ex.Message);
+        }
+    }
+
+    public static async Task<IResult> UpdateProductAsync(
+        [FromForm] UpdateProductCommand updateProductCommand,
+        IProductService productService)
+    {
+        try
+        {
+            await productService.UpdateProductAsync(updateProductCommand);
+
+            return Results.Ok();
+        }
+        catch(Exception ex)
+        {
+            return Results.BadRequest(ex.Message);
         }
     }
 }

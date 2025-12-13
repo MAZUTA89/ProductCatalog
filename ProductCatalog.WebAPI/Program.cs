@@ -10,6 +10,10 @@ builder.Services.AddImageStorage();
 builder.Services.AddMapper();
 builder.Services.AddProductServices();
 
+builder.Services.AddMediatR(cfg =>
+cfg.RegisterServicesFromAssemblies(AppDomain.CurrentDomain.GetAssemblies()));
+
+
 WebApplication app = builder.Build();
 
 string staticPrefix = "/api/products/";

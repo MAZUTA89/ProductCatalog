@@ -6,35 +6,35 @@ using ProductCatalog.Domain.Core.Entities;
 using ProductCatalog.Domain.Core.Interfaces;
 using System.IO.Compression;
 
-namespace ProductCatalog.Infrastructure.Queries
+namespace ProductCatalog.Infrastructure.Queries;
+
+public class GetPhotosHandler
+    : IRequestHandler<GetPhotosByProductIdQuery, Stream>
 {
-    public class GetPhotosHandler
-        : IRequestHandler<GetPhotosByProductIdQuery, Stream>
+
+    protected IProductRepository ProductRepository { get; set; }
+    protected IImageStorage ImageStorage { get; set; }
+
+    public GetPhotosHandler(IProductRepository productRepository,
+        IImageStorage imageStorage)
     {
+        ProductRepository = productRepository;
+        ImageStorage = imageStorage;
+    }
 
-        protected IProductRepository ProductRepository { get; set; }
-        protected IImageStorage ImageStorage { get; set; }
+    public async Task<Stream> Handle(GetPhotosByProductIdQuery request,
+        CancellationToken ct)
+    {
+        Stream result = new MemoryStream();
 
-        public GetPhotosHandler(IProductRepository productRepository,
-            IImageStorage imageStorage)
+        var product = await ProductRepository
+            .GetProductByIdAsync(request.Id);
+
+        var names = product.Images.Select(i => i.FileName);
+
+        using (var archive = new ZipArchive(result,
+            ZipArchiveMode.Create, true))
         {
-            ProductRepository = productRepository;
-            ImageStorage = imageStorage;
-        }
-
-        public async Task<Stream> Handle(GetPhotosByProductIdQuery request,
-            CancellationToken ct)
-        {
-            Stream result = new MemoryStream();
-
-            var product = await ProductRepository
-                .GetProductByIdAsync(request.Id);
-
-            var names = product.Images.Select(i => i.FileName);
-
-            await using var archive = new ZipArchive(result,
-                ZipArchiveMode.Create, true);
-
             foreach (var imgName in names)
             {
                 Stream input = await ImageStorage.GetFileAsync(imgName);
@@ -49,8 +49,10 @@ namespace ProductCatalog.Infrastructure.Queries
                     await input.CopyToAsync(entryStream);
                 }
             }
-
-            return result;
         }
+
+        result.Position = 0;
+
+        return result;
     }
 }

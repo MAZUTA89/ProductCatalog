@@ -15,11 +15,13 @@ public class DeleteProductHandler : IRequestHandler<DeleteProductCommand,
 
     public DeleteProductHandler(IProductRepository productRepository,
         IMapper mapper,
-        IImageStorage imageStorage)
+        IImageStorage imageStorage,
+        IProductsUnitOfWork uow)
     {
         ProductRepository = productRepository;
         Mapper = mapper;
         ImageStorage = imageStorage;
+        Uow = uow;
     }
 
     protected IImageStorage ImageStorage { get; set; }

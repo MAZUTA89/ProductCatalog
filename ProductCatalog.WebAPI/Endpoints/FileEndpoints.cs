@@ -1,84 +1,91 @@
-﻿using Microsoft.AspNetCore.Http.Features;
-using ProductCatalog.Application.Interfaces;
-using ProductCatalog.Domain.Core.Interfaces;
-using System.Net;
+﻿using MediatR;
+using Microsoft.AspNetCore.Http.Features;
+using ProductCatalog.Application.Queries;
 using System.Net.Mime;
 
-namespace ProductCatalog.WebAPI.Endpoints
+namespace ProductCatalog.WebAPI.Endpoints;
+
+public static class FileEndpoints
 {
-    public static class FileEndpoints
+    public static IEndpointRouteBuilder UseFileEndpoints
+        (this IEndpointRouteBuilder endpoints, string rootStaticPath)
     {
-        public static IEndpointRouteBuilder UseFileEndpoints
-            (this IEndpointRouteBuilder endpoints, string rootStaticPath)
+        var group = endpoints.MapGroup(rootStaticPath);
+
+        group.MapGet("/report", ExportCsvAsync);
+        group.MapGet("/photos/{productId:int}", GetPhotosByProductId);
+
+        return endpoints;
+    }
+
+    public static async Task ExportCsvAsync(
+        HttpContext ctx,
+        IMediator mediator)
+    {
+        try
         {
-            var group = endpoints.MapGroup(rootStaticPath);
-
-            group.MapGet("/report", ExportCsvAsync);
-            group.MapGet("/photos/{productId:int}", GetPhotosByProductId);
-
-            return endpoints;
-        }
-
-        public static async Task<IResult> ExportCsvAsync(
-            HttpContext ctx,
-            IProductService productService)
-        {
-            try
-            {
-                ctx.Response.ContentType = MediaTypeNames.Text.Csv;
-                ctx.Response.Headers.ContentDisposition =
-                    new ContentDisposition()
-                    {
-                        DispositionType = DispositionTypeNames.Attachment,
-                        FileName = $"report.csv",
-                        CreationDate = DateTime.UtcNow
-                    }.ToString();
-
-                await productService.ExportCsvReportAsync(ctx.Response.Body);
-
-                return Results.Empty;
-            }
-            catch (Exception ex)
-            {
-                return Results.BadRequest(ex.Message);
-            }
-        }
-
-        public static async Task GetPhotosByProductId(
-            int productId,
-            HttpContext ctx,
-            IProductService productService)
-        {
-            try
-            {
-                if(productId < 0)
+            ctx.Response.ContentType = MediaTypeNames.Text.Csv;
+            ctx.Response.Headers.ContentDisposition =
+                new ContentDisposition()
                 {
-                    throw new Exception("id < 0.");
-                }
+                    DispositionType = DispositionTypeNames.Attachment,
+                    FileName = $"report.csv",
+                    CreationDate = DateTime.UtcNow
+                }.ToString();
 
-                var allowSynchronousIoOption = ctx.Features.Get<IHttpBodyControlFeature>();
-                if (allowSynchronousIoOption != null)
-                {
-                    allowSynchronousIoOption.AllowSynchronousIO = true;
-                }
+            var query = new GetProductsCsvReportQuery();
 
-                ctx.Response.Headers.ContentType = MediaTypeNames.Application.Zip;
-                ctx.Response.Headers.ContentDisposition =
-                    new ContentDisposition()
-                    {
-                        FileName = $"photos_{productId}.zip",
-                        DispositionType = DispositionTypeNames.Attachment
+            Stream result = await mediator.Send(query);
 
-                    }.ToString();
+            await Results.File(result).ExecuteAsync(ctx);
+        }
+        catch (Exception ex)
+        {
+            await Results.BadRequest(ex.Message).ExecuteAsync(ctx);
+        }
+    }
 
-                var productDto = await productService
-                    .GetPhotosByProductIdAsync(productId, ctx.Response.Body);
-                
-            }
-            catch(Exception ex)
+    public static async Task GetPhotosByProductId(
+        int productId,
+        HttpContext ctx,
+        IMediator mediator)
+    {
+        try
+        {
+            if (productId < 0)
             {
-                ctx.Response.Body.Close();
+                throw new Exception("id < 0.");
             }
+
+            var allowSynchronousIoOption =
+                ctx.Features.Get<IHttpBodyControlFeature>();
+
+            //if (allowSynchronousIoOption != null)
+            //{
+            //    allowSynchronousIoOption.AllowSynchronousIO = true;
+            //}
+
+            ctx.Response.ContentType = MediaTypeNames.Application.Zip;
+            ctx.Response.Headers.ContentDisposition =
+                new ContentDisposition()
+                {
+                    FileName = $"photos_{productId}.zip",
+                    DispositionType = DispositionTypeNames.Attachment
+
+                }.ToString();
+
+            var query = new GetPhotosByProductIdQuery()
+            { Id = productId };
+            ;
+
+            var result = await mediator.Send(query);
+
+            await Results.File(result).ExecuteAsync(ctx);
+
+        }
+        catch (Exception ex)
+        {
+            await Results.BadRequest(ex.Message).ExecuteAsync(ctx);
         }
     }
 }

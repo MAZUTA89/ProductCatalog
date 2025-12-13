@@ -19,9 +19,11 @@ public class GetProductsCsvHandler
     protected IProductRepository ProductRepository { get; set; }
     protected IMapper Mapper { get; set; }
 
-    public GetProductsCsvHandler(IProductRepository productRepository)
+    public GetProductsCsvHandler(IProductRepository productRepository,
+        IMapper mapper)
     {
         ProductRepository = productRepository;
+        Mapper = mapper;
     }
 
     public async Task<Stream> Handle(GetProductsCsvReportQuery request,
@@ -31,7 +33,7 @@ public class GetProductsCsvHandler
 
         await using var writer = new StreamWriter(
             result,
-            Encoding.UTF8);
+            Encoding.UTF8, leaveOpen:true);
 
         await using var csvWriter = new CsvWriter(writer,
             CultureInfo.InvariantCulture, leaveOpen: true);
@@ -40,6 +42,7 @@ public class GetProductsCsvHandler
         await csvWriter.NextRecordAsync();
 
         var products = ProductRepository.ProductsQuery()
+            .Include(p => p.Images)
             .AsAsyncEnumerable();
 
         await foreach (var product in products)
@@ -51,6 +54,10 @@ public class GetProductsCsvHandler
 
             await writer.FlushAsync();
         }
+
+        await csvWriter.FlushAsync();
+
+        result.Position = 0;
 
         return result;
     }

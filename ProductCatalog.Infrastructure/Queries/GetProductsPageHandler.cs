@@ -13,6 +13,13 @@ public class GetProductsPageHandler
     : IRequestHandler<GetProductsPageQuery,
         ProductsPage<ProductDtoWithId>>
 {
+    public GetProductsPageHandler(IProductRepository productRepository,
+        IMapper mapper)
+    {
+        ProductRepository = productRepository;
+        Mapper = mapper;
+    }
+
     protected IProductRepository ProductRepository { get; set; }
     protected IMapper Mapper { get; set; }
     public async Task<ProductsPage<ProductDtoWithId>> Handle(
