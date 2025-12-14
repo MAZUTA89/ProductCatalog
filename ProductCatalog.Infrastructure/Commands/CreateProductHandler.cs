@@ -54,9 +54,20 @@ namespace ProductCatalog.Infrastructure.Commands
 
                     productImage.FileName =
                         await ImageStorage.PutFileAsync(file.Content,
-                        $"{product.Id}_{file.FileName}");
+                        $"{product.Id}_{Guid.NewGuid()}_{file.FileName}");
 
                     images.Add(productImage);
+                }
+
+                HashSet<string> namesHash = new HashSet<string>(images.Select(i=> i.FileName));
+
+                if (namesHash.Count != images.Count)
+                {
+                    foreach (var name in images)
+                    {
+                        Console.WriteLine(name);
+                    }
+                    throw new Exception("Беда");
                 }
 
                 await ProductRepository.AddImagesAsync(images);
