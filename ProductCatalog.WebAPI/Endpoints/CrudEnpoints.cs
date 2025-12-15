@@ -4,6 +4,7 @@ using ProductCatalog.Application.Interfaces;
 using ProductCatalog.Application.Queries;
 using MediatR;
 using ProductCatalog.Application.Commands;
+using ProductCatalog.Infrastructure.Repositories.NpgRepository.Exceptions;
 
 namespace ProductCatalog.WebAPI.Endpoints;
 
@@ -14,7 +15,11 @@ public static class CrudEnpoints
     {
         var group = endpoints.MapGroup(rootStaticPath);
 
-        group.MapGet("/{id:int}", GetProductById);
+        group.MapGet("/{id:int}", GetProductById)
+            .AddOpenApiOperationTransformer((operation, ctx, ct) =>
+            {
+                return Task.CompletedTask;
+            });
 
         group.MapGet("/all", GetAllProductsAsync);
 
@@ -26,7 +31,14 @@ public static class CrudEnpoints
         group.MapDelete("/{id:int}", RemoveProduct);
         return endpoints;
     }
-
+    /// <summary>
+    /// Get a product by product id.
+    /// </summary>
+    /// <returns>Product item</returns>
+    /// <remarks>
+    /// Sample request:
+    /// GET api/products/5
+    /// </remarks>
     public static async Task<IResult> GetProductById(
         int id,
         IMediator mediator)

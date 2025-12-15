@@ -48,7 +48,7 @@ namespace ProductCatalog.Infrastructure.Repositories.Abstructions
                     Id = id
                 };
 
-                throw new NpgProductNotFoundException(args);
+                throw new ProductNotFoundException(args);
             }
 
             ProductDbContext.Products.Remove(product);
@@ -68,7 +68,7 @@ namespace ProductCatalog.Infrastructure.Repositories.Abstructions
                     Id = id
                 };
 
-                throw new NpgProductNotFoundException(args);
+                throw new ProductNotFoundException(args);
             }
 
             return product;

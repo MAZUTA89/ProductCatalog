@@ -1,9 +1,9 @@
 ﻿namespace ProductCatalog.Infrastructure.Repositories.NpgRepository.Exceptions
 {
-    public class NpgProductNotFoundException : Exception
+    public class ProductNotFoundException : Exception
     {
         NpgRepositoryArgs _args;
-        public NpgProductNotFoundException(NpgRepositoryArgs args)
+        public ProductNotFoundException(NpgRepositoryArgs args)
             :base($"Product with {args.Id} id not found.")
         {
             _args = args;

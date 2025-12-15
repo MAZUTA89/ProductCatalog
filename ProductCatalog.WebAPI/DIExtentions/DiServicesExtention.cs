@@ -13,6 +13,7 @@ using ProductCatalog.Infrastructure.Repositories.Abstructions;
 using ProductCatalog.Infrastructure.Repositories.NpgRepository;
 using ProductCatalog.Infrastructure.Services.ProductServices;
 using ProductCatalog.Infrastructure.Services.ProductServices.UnitOfWork;
+using System.Reflection;
 
 namespace ProductCatalog.WebAPI.Extentions
 {
@@ -93,6 +94,30 @@ namespace ProductCatalog.WebAPI.Extentions
                 typeof(CommandsAndQueriesPfofile));
 
             return services;
+        }
+
+        public static IServiceCollection AddMediatR(this IServiceCollection services)
+        {
+            services.AddMediatR(cfg =>
+            {
+                cfg.RegisterServicesFromAssemblies(AppDomain.CurrentDomain.GetAssemblies());
+            });
+
+            return services;
+        }
+
+        public static IServiceCollection AddProductsSwagger(this IServiceCollection servics)
+        {
+            servics.AddEndpointsApiExplorer();
+            servics.AddSwaggerGen(options =>
+            {
+                var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+                var xmkPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+
+                options.IncludeXmlComments(xmkPath);
+            });
+
+            return servics;
         }
     }
 }
