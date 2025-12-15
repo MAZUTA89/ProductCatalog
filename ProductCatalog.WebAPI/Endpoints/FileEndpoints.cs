@@ -13,7 +13,7 @@ public static class FileEndpoints
         var group = endpoints.MapGroup(rootStaticPath);
 
         group.MapGet("/report", ExportCsvAsync);
-        group.MapGet("/photos/{productId:int}", GetPhotosByProductId);
+        group.MapGet("{productId:int}/photos", GetPhotosByProductId);
 
         return endpoints;
     }
@@ -60,10 +60,6 @@ public static class FileEndpoints
             var allowSynchronousIoOption =
                 ctx.Features.Get<IHttpBodyControlFeature>();
 
-            //if (allowSynchronousIoOption != null)
-            //{
-            //    allowSynchronousIoOption.AllowSynchronousIO = true;
-            //}
 
             ctx.Response.ContentType = MediaTypeNames.Application.Zip;
             ctx.Response.Headers.ContentDisposition =

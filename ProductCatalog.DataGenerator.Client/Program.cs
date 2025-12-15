@@ -1,8 +1,5 @@
 ﻿using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Configuration.Json;
 using ProductCatalog.DataGenerator.Client;
-using System.Globalization;
-using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Mime;
 
@@ -68,15 +65,13 @@ for (int i = 0; i < productsAmount; i++)
 Console.ReadLine();
 
 
-
-
 static IEnumerable<string> GetRandomFilesPathFromFolder(DirectoryInfo folder, Random random)
 {
     List<string> pathes = new List<string>();
 
     var files = folder.GetFiles();
 
-    int count = random.Next(0, (int)files.Length / 3);
+    int count = random.Next(0, 5);
 
     for (int i = 0; i < count; i++)
     {
