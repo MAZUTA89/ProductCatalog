@@ -2,8 +2,7 @@
 using ProductCatalog.Domain.Core.Entities;
 using ProductCatalog.Domain.Core.Interfaces;
 using ProductCatalog.Infrastructure.Data.AppDbContext;
-using ProductCatalog.Infrastructure.Repositories.NpgRepository.Exceptions;
-using static System.Net.Mime.MediaTypeNames;
+using ProductCatalog.Infrastructure.Repositories.Exceptions;
 
 namespace ProductCatalog.Infrastructure.Repositories.Abstructions
 {
@@ -20,10 +19,10 @@ namespace ProductCatalog.Infrastructure.Repositories.Abstructions
             if (await ProductDbContext.Products.AnyAsync(
                 p => p.Title == product.Title))
             {
-                var args = new NpgRepositoryArgs();
+                var args = new ProductsRepositoryArgs();
                 args.Title = product.Title;
 
-                throw new NpgProductAlreadyExistException(args);
+                throw new ProductAlreadyExistException(args);
             }
 
             await ProductDbContext.Products.AddAsync(product);
@@ -43,7 +42,7 @@ namespace ProductCatalog.Infrastructure.Repositories.Abstructions
 
             if (product == null)
             {
-                var args = new NpgRepositoryArgs()
+                var args = new ProductsRepositoryArgs()
                 {
                     Id = id
                 };
@@ -63,7 +62,7 @@ namespace ProductCatalog.Infrastructure.Repositories.Abstructions
 
             if (product == null)
             {
-                var args = new NpgRepositoryArgs()
+                var args = new ProductsRepositoryArgs()
                 {
                     Id = id
                 };
@@ -102,10 +101,10 @@ namespace ProductCatalog.Infrastructure.Repositories.Abstructions
             if(await ProductDbContext.Images.AnyAsync(
                 i => i.FileName == image.FileName))
             {
-                var args = new NpgRepositoryArgs();
+                var args = new ProductsRepositoryArgs();
                 args.Title = image.FileName;
 
-                throw new NpgProductAlreadyExistException(args);
+                throw new ProductAlreadyExistException(args);
             }
             
             await ProductDbContext.Images.AddAsync(image);

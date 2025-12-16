@@ -109,13 +109,14 @@ namespace ProductCatalog.WebAPI.Extentions
         public static IServiceCollection AddProductsSwagger(this IServiceCollection servics)
         {
             servics.AddEndpointsApiExplorer();
-            servics.AddSwaggerGen(options =>
-            {
-                var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
-                var xmkPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+            servics.AddSwaggerGen();
+            //servics.AddSwaggerGen(options =>
+            //{
+            //    var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+            //    var xmkPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
 
-                options.IncludeXmlComments(xmkPath);
-            });
+            //    options.IncludeXmlComments(xmkPath);
+            //});
 
             return servics;
         }

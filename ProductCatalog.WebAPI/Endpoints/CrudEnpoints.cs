@@ -4,7 +4,8 @@ using ProductCatalog.Application.Interfaces;
 using ProductCatalog.Application.Queries;
 using MediatR;
 using ProductCatalog.Application.Commands;
-using ProductCatalog.Infrastructure.Repositories.NpgRepository.Exceptions;
+using ProductCatalog.WebAPI.Endpoints.ExceptionsHandlers;
+using ProductCatalog.Infrastructure.Repositories.Exceptions;
 
 namespace ProductCatalog.WebAPI.Endpoints;
 
@@ -16,32 +17,95 @@ public static class CrudEnpoints
         var group = endpoints.MapGroup(rootStaticPath);
 
         group.MapGet("/{id:int}", GetProductById)
-            .AddOpenApiOperationTransformer((operation, ctx, ct) =>
+            .WithOpenApi(operation =>
             {
-                return Task.CompletedTask;
-            });
+                operation.Summary = "Get a product by product id.";
+                operation.Description = """
+                **Sample request**
 
-        group.MapGet("/all", GetAllProductsAsync);
+                `GET /api/products/5`
+
+                **Sample response**
+
+                ```json
+                {
+                  "productId": "5",
+                  "title": "product title",
+                  "description": "product description",
+                  "images": [
+                    {
+                      "fileName": "file name"
+                    }
+                  ]
+                }
+                ```
+                """;
+                operation.Responses["400"].Description = "Product not found";
+                operation.Responses["503"].Description = "Unexpected error";
+
+                return operation;
+            })
+            .Produces(StatusCodes.Status200OK,
+            responseType: typeof(ProductDtoWithId))
+            .Produces(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status503ServiceUnavailable);
+
+        group.MapGet("/all", GetAllProductsAsync)
+            .WithOpenApi(operation =>
+            {
+                operation.Summary = "Returns all products.";
+                operation.Description = """
+                **Sample request**
+
+                `GET api/products/all`
+                """;
+
+                operation.Responses["200"].Description = "Return all products";
+                operation.Responses["503"].Description = "Unexpected error";
+                return operation;
+            })
+            .Produces(StatusCodes.Status200OK, responseType: typeof(IEnumerable<ProductDtoWithId>))
+            .Produces(StatusCodes.Status503ServiceUnavailable);
 
         group.MapPost("", CreateProductMultipart)
+            .WithOpenApi(operation =>
+            {
+                operation.Summary = "Adds a new product.";
+                operation.Description = """
+                **Sample request**
+
+                `POST /api/products`
+                
+                *Multipart query parameners:*
+
+                `"title" : "product title"`;
+
+                `"description" : "product description"`;
+
+                `"files" : images content`.
+                """;
+
+                operation.Responses["400"].Description = "Product exist.";
+                operation.Responses["503"].Description = "Unexpected error";
+
+                return operation;
+            })
+            .Produces(StatusCodes.Status200OK, responseType: typeof(ProductDtoWithId))
+            .Produces(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status503ServiceUnavailable)
             .DisableAntiforgery();
+            
 
         group.MapPut("", UpdateProductAsync);
 
         group.MapDelete("/{id:int}", RemoveProduct);
         return endpoints;
     }
-    /// <summary>
-    /// Get a product by product id.
-    /// </summary>
-    /// <returns>Product item</returns>
-    /// <remarks>
-    /// Sample request:
-    /// GET api/products/5
-    /// </remarks>
-    public static async Task<IResult> GetProductById(
+
+    public static async Task GetProductById(
         int id,
-        IMediator mediator)
+        IMediator mediator,
+        HttpContext ctx)
     {
         try
         {
@@ -49,18 +113,18 @@ public static class CrudEnpoints
 
             var product = await mediator.Send(query);
 
-            if (product == null)
-            {
-                return Results.Json(new { message = "Unexpected error." }, statusCode: 500);
-            }
-            else
-            {
-                return Results.Json(product);
-            }
+            await Results.Json(product, statusCode: StatusCodes.Status200OK)
+                .ExecuteAsync(ctx);
+        }
+        catch (ProductNotFoundException ex)
+        {
+            await ExceptionsEndpointHelper.
+                HandleProductNotFoundExceptionAsync(ctx, id);
         }
         catch (Exception ex)
         {
-            return Results.BadRequest(ex.Message);
+            await ExceptionsEndpointHelper
+                .HandleServerErrorException(ctx);
         }
     }
 
@@ -75,15 +139,17 @@ public static class CrudEnpoints
 
             var product = await mediator.Send(query);
 
-            await Results.Json(product).ExecuteAsync(ctx);
+            await Results.Json(product, statusCode: StatusCodes.Status200OK)
+                .ExecuteAsync(ctx);
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
-            await Results.BadRequest(ex.Message).ExecuteAsync(ctx);
+            await ExceptionsEndpointHelper
+                .HandleServerErrorException(ctx);
         }
     }
 
-    public static async Task<IResult> CreateProductMultipart(
+    public static async Task CreateProductMultipart(
         [FromForm] string title,
         [FromForm] string description,
         [FromForm] IFormFileCollection files,
@@ -100,60 +166,76 @@ public static class CrudEnpoints
 
             IEnumerable<FileContent> content = files.Select(
                 f => new FileContent()
-            {
-                FileName = f.FileName,
-                Content = f.OpenReadStream()
-            });
+                {
+                    FileName = f.FileName,
+                    Content = f.OpenReadStream()
+                });
 
             command.Files = content;
 
 
             var createdProductDto = await mediator.Send(command);
 
-            return Results.Json(createdProductDto);
+            await Results.Json(createdProductDto,
+                statusCode: StatusCodes.Status201Created)
+                .ExecuteAsync(ctx);
+        }
+        catch (ProductAlreadyExistException ex)
+        {
+            await ExceptionsEndpointHelper
+                .HandleProductAlreadyExsistExceptionAsync(ctx);
         }
         catch (Exception ex)
         {
-            return Results.BadRequest(ex.Message);
+            await ExceptionsEndpointHelper
+                .HandleServerErrorException(ctx);
         }
     }
 
-    public static async Task<IResult> RemoveProduct(
+    public static async Task RemoveProduct(
         int id,
-        IMediator mediator)
+        IMediator mediator,
+        HttpContext ctx)
     {
         try
         {
             var command = new DeleteProductCommand()
             { Id = id };
-            
-
-            if (command.Id < 0)
-                return Results.Json(new { message = "id < 0" });
 
             var result = await mediator.Send(command);
 
-            return Results.Ok(result);
+            Results.Ok(result);
+        }
+        catch (ProductNotFoundException ex)
+        {
+            await ExceptionsEndpointHelper
+                .HandleProductNotFoundExceptionAsync(ctx);
         }
         catch (Exception ex)
         {
-            return Results.BadRequest(ex.Message);
+            await ExceptionsEndpointHelper
+                .HandleServerErrorException(ctx);
         }
     }
 
-    public static async Task<IResult> UpdateProductAsync(
+    public static async Task UpdateProductAsync(
         [FromForm] UpdateProductCommand updateProductCommand,
-        IProductService productService)
+        IProductService productService,
+        HttpContext ctx)
     {
+        await ExceptionsEndpointHelper.HandleServerErrorException(ctx);
+
         try
         {
             await productService.UpdateProductAsync(updateProductCommand);
 
-            return Results.Ok();
+            await Results.Ok()
+                .ExecuteAsync(ctx);
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
-            return Results.BadRequest(ex.Message);
+            await Results.BadRequest(ex.Message)
+                .ExecuteAsync(ctx);
         }
     }
 }

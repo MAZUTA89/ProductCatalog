@@ -1,4 +1,7 @@
 <Solution>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+  </Folder>
   <Project Path="ProductCatalog.Application/ProductCatalog.Application.csproj" />
   <Project Path="ProductCatalog.Domain.Core/ProductCatalog.Domain.Core.csproj" />
   <Project Path="ProductCatalog.Infrastructure/ProductCatalog.Infrastructure.csproj" />
