@@ -1,2 +1,2 @@
 # ProductCatalog
-Layer architecture products catalog server application
+Layered architecture products catalog server application
