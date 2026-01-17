@@ -1,2 +1,2 @@
 # ProductCatalog
-Layer architecture products catalog application()API
+Onion architecture products catalog, server application(Minimal API)
