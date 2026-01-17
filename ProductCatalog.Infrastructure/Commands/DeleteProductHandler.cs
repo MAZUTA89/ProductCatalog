@@ -39,12 +39,12 @@ public class DeleteProductHandler : IRequestHandler<DeleteProductCommand,
                 throw new Exception("Unexpected error.");
             }
 
+            await Uow.BeginTransactionAsync();
+
             foreach (var img in product.Images)
             {
                 await ImageStorage.DeleteFileAsync(img.FileName);
             }
-
-            await Uow.BeginTransactionAsync();
 
             await ProductRepository.DeleteProductAsync(request.Id);
 

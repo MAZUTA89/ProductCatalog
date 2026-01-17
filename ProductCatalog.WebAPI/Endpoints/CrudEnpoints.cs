@@ -173,7 +173,6 @@ public static class CrudEnpoints
 
             command.Files = content;
 
-
             var createdProductDto = await mediator.Send(command);
 
             await Results.Json(createdProductDto,

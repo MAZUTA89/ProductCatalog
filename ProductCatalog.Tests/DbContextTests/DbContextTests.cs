@@ -1,9 +1,6 @@
 ﻿using ProductCatalog.Infrastructure.Configuring.DbContext;
 using ProductCatalog.Infrastructure.Data.AppDbContext;
 using ProductCatalog.Infrastructure.Data.AppDbContext.DbContextOptionsSettings;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace ProductCatalog.Tests.DbContextTests
 {

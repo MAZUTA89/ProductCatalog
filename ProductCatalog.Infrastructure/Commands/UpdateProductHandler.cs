@@ -30,7 +30,7 @@ namespace ProductCatalog.Infrastructure.Commands
         public async Task<ProductDtoWithId> Handle(UpdateProductWithImagesCommand request,
             CancellationToken cancellationToken)
         {
-            Product product = await ProductRepository
+            Product? product = await ProductRepository
                 .GetProductByIdAsync(request.Id);
 
             if (product == null)

@@ -59,16 +59,16 @@ namespace ProductCatalog.Infrastructure.Commands
                     images.Add(productImage);
                 }
 
-                HashSet<string> namesHash = new HashSet<string>(images.Select(i=> i.FileName));
+                //HashSet<string> namesHash = new HashSet<string>(images.Select(i=> i.FileName));
 
-                if (namesHash.Count != images.Count)
-                {
-                    foreach (var name in images)
-                    {
-                        Console.WriteLine(name);
-                    }
-                    throw new Exception("Беда");
-                }
+                //if (namesHash.Count != images.Count)
+                //{
+                //    foreach (var name in images)
+                //    {
+                //        Console.WriteLine(name);
+                //    }
+                //    throw new Exception("Беда");
+                //}
 
                 await ProductRepository.AddImagesAsync(images);
 

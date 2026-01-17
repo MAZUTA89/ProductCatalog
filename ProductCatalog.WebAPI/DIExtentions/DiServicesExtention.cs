@@ -13,112 +13,103 @@ using ProductCatalog.Infrastructure.Repositories.Abstructions;
 using ProductCatalog.Infrastructure.Repositories.NpgRepository;
 using ProductCatalog.Infrastructure.Services.ProductServices;
 using ProductCatalog.Infrastructure.Services.ProductServices.UnitOfWork;
-using System.Reflection;
 
-namespace ProductCatalog.WebAPI.Extentions
+namespace ProductCatalog.WebAPI.Extentions;
+
+public static class DiServicesExtention
 {
-    public static class DiServicesExtention
+    public static IServiceCollection AddProductServices
+        (this IServiceCollection services)
     {
-        public static IServiceCollection AddProductServices
-            (this IServiceCollection services)
+        services.AddScoped<IProductsUnitOfWork, ProductUow>();
+        services.AddScoped<ProductUow>();
+        services.AddScoped<IProductService, NpgProductService>();
+        return services;
+    }
+    public static IServiceCollection AddNpgProductRepository
+        (this IServiceCollection services)
+    {
+        services.AddSingleton<NpgConfigProd>();
+
+        services.AddSingleton<NpgContextOptionsFacade>();
+
+        services.AddSingleton<IDbContextOption, NpgContextOptionsFacade>();
+
+        services.AddScoped<NpgProductDbContext>();
+
+        services.AddScoped<IProductDbContext, NpgProductDbContext>();
+
+        services.AddScoped<ProductDbContextBase>(sp => sp.GetRequiredService<NpgProductDbContext>());
+
+        services.AddScoped<ProductRepository, NpgProductRepository>();
+
+        services.AddScoped<NpgProductRepository>();
+
+        services.AddScoped<IProductRepository, NpgProductRepository>();
+        
+        return services;
+    }
+
+    public static IServiceCollection AddImageStorage
+        (this IServiceCollection services)
+    {
+        services.AddSingleton<IMinioConfig, MinioStorageConfig>();
+        services.AddSingleton<MinioStorageConfig>();
+
+        services.AddSingleton<IMinioClient>(factory =>
         {
-            services.AddScoped<IProductsUnitOfWork, ProductUow>();
-            services.AddScoped<ProductUow>();
-            services.AddScoped<IProductService, NpgProductService>();
-            return services;
-        }
-        public static IServiceCollection AddNpgProductRepository
-            (this IServiceCollection services)
+            var config = factory.GetRequiredService<MinioStorageConfig>();
+
+            config.GetMinioParameters(
+            out string endpoint,
+            out string accessKey,
+            out string secretKey,
+            out bool secure);
+
+            var minioClient = new MinioClient();
+
+            minioClient.WithEndpoint(endpoint);
+            minioClient.WithCredentials(accessKey, secretKey);
+            minioClient.WithSSL(secure);
+            minioClient.Build();
+
+            return minioClient;
+        });
+
+        services.AddTransient<IImageConverter, WebpImageConverter>();
+        services.AddTransient<WebpImageConverter>();
+
+        services.AddSingleton<IImageStorage, ProductsImagesStorage>();
+        services.AddSingleton<ProductsImagesStorage>();
+
+        return services;
+    }
+
+    public static IServiceCollection AddMapper
+        (this IServiceCollection services)
+    {
+        services.AddAutoMapper(cfg => { },
+            typeof(ProductProfile),
+            typeof(CommandsAndQueriesPfofile));
+
+        return services;
+    }
+
+    public static IServiceCollection AddMediatR(this IServiceCollection services)
+    {
+        services.AddMediatR(cfg =>
         {
-            services.AddSingleton<NpgConfigProd>();
+            cfg.RegisterServicesFromAssemblies(AppDomain.CurrentDomain.GetAssemblies());
+        });
 
-            services.AddSingleton<NpgContextOptionsFacade>();
+        return services;
+    }
 
-            services.AddSingleton<IDbContextOption, NpgContextOptionsFacade>();
+    public static IServiceCollection AddProductsSwagger(this IServiceCollection servics)
+    {
+        servics.AddEndpointsApiExplorer();
+        servics.AddSwaggerGen();
 
-            services.AddScoped<NpgProductDbContext>();
-
-            services.AddScoped<IProductDbContext, NpgProductDbContext>();
-
-            services.AddScoped<ProductDbContextBase>(sp => sp.GetRequiredService<NpgProductDbContext>());
-
-            services.AddScoped<ProductRepository, NpgProductRepository>();
-
-            services.AddScoped<NpgProductRepository>();
-
-            services.AddScoped<IProductRepository, NpgProductRepository>();
-            
-            return services;
-        }
-
-        public static IServiceCollection AddImageStorage
-            (this IServiceCollection services)
-        {
-            services.AddSingleton<IMinioConfig, MinioStorageConfig>();
-            services.AddSingleton<MinioStorageConfig>();
-
-            services.AddSingleton<IMinioClient>(factory =>
-            {
-                var config = factory.GetRequiredService<MinioStorageConfig>();
-
-                config.GetMinioParameters(
-                out string endpoint,
-                out string accessKey,
-                out string secretKey,
-                out bool secure);
-
-                var minioClient = new MinioClient();
-
-                minioClient.WithEndpoint(endpoint);
-                minioClient.WithCredentials(accessKey, secretKey);
-                minioClient.WithSSL(secure);
-                minioClient.Build();
-
-                return minioClient;
-            });
-
-            services.AddTransient<IImageConverter, WebpImageConverter>();
-            services.AddTransient<WebpImageConverter>();
-
-            services.AddSingleton<IImageStorage, ProductsImagesStorage>();
-            services.AddSingleton<ProductsImagesStorage>();
-
-            return services;
-        }
-
-        public static IServiceCollection AddMapper
-            (this IServiceCollection services)
-        {
-            services.AddAutoMapper(cfg => { },
-                typeof(ProductProfile),
-                typeof(CommandsAndQueriesPfofile));
-
-            return services;
-        }
-
-        public static IServiceCollection AddMediatR(this IServiceCollection services)
-        {
-            services.AddMediatR(cfg =>
-            {
-                cfg.RegisterServicesFromAssemblies(AppDomain.CurrentDomain.GetAssemblies());
-            });
-
-            return services;
-        }
-
-        public static IServiceCollection AddProductsSwagger(this IServiceCollection servics)
-        {
-            servics.AddEndpointsApiExplorer();
-            servics.AddSwaggerGen();
-            //servics.AddSwaggerGen(options =>
-            //{
-            //    var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
-            //    var xmkPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-
-            //    options.IncludeXmlComments(xmkPath);
-            //});
-
-            return servics;
-        }
+        return servics;
     }
 }

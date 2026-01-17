@@ -2,3 +2,6 @@
 
 # CA2263: Предпочитать универсальную перегрузку, если тип известен
 dotnet_diagnostic.CA2263.severity = none
+
+# ASPDEPR002: Тип или член устарел
+dotnet_diagnostic.ASPDEPR002.severity = none
